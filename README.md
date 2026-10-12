@@ -30,6 +30,6 @@ Podgląd jest dostępny pod `http://127.0.0.1:8765`. Używa wyłącznie syntetyc
 
 ## Konfiguracja rzeczywistych odczytów
 
-Na Pico: `firmware/secrets.py` utworzony z przykładu, zapisany na urządzeniu jako `secrets.py`. Na serwerze: `.env` utworzony z `.env.example`. `API_TOKEN` Pico i `PICO_TOKEN` backendu muszą być identyczne. Docelowy adres Pico to `192.168.1.205`, przydzielany przez rezerwację DHCP routera.
+Na Pico: `firmware/secrets.py` utworzony z przykładu, zapisany na urządzeniu jako `secrets.py`. Na serwerze: `.env` utworzony z `.env.example`. `API_TOKEN` Pico i `PICO_TOKEN` backendu muszą być identyczne. Docelowy adres Pico to `192.168.1.205`, ustawiany statycznie przez `STATIC_IPV4` w `firmware/config.py`.
 
 Uruchomienie przez Docker i konfigurację istniejącego tunelu opisuje instrukcja wdrożenia. W repozytorium nie przechowuje się haseł Wi-Fi, tokenów ani rzeczywistych baz danych.
