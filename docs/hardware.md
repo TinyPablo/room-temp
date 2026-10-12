@@ -28,7 +28,7 @@ Wi-Fi musi udostępniać sieć 2,4 GHz, a serwer i Pico muszą móc komunikować
 
 4. Wpisać nazwę sieci w `WIFI_SSID`, hasło w `WIFI_PASSWORD`, wygenerowany klucz w `API_TOKEN` i pozostawić `WIFI_COUNTRY = "PL"`. Ten sam klucz będzie używany jako `PICO_TOKEN` przez backend. Nie umieszczać konfiguracji w repozytorium. Plik na Pico nie jest szyfrowany.
 5. W Thonny wybrać interpreter MicroPython dla Raspberry Pi Pico i port USB urządzenia. Zapisać w katalogu głównym Pico pliki: `config.py`, `protocol.py`, `sht3x.py`, `secrets.py`, a na końcu `main.py`. Nie kopiować całego folderu `firmware` jako podkatalogu.
-6. Odłączyć i ponownie podłączyć zasilanie. W konsoli USB pojawią się MAC oraz przydzielony adres IP. W routerze utworzyć rezerwację DHCP dla tego MAC i wybranego wolnego adresu. Adres z `.env.example` jest przykładem, nie rezerwacją.
+6. Odłączyć i ponownie podłączyć zasilanie. W konsoli USB pojawią się MAC oraz przydzielony adres IP. W routerze utworzyć rezerwację DHCP dla tego MAC i adresu **192.168.1.205**. Wartość w `.env.example` nie tworzy rezerwacji na routerze.
 
 Nieprawidłowa lub brakująca konfiguracja pozostawia urządzenie w konsoli USB bez uruchamiania watchdoga. Po poprawieniu pliku wykonać reset.
 

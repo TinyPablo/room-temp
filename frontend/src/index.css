@@ -60,7 +60,7 @@ h1 > span { color: #85817c; }
 .active.cool .metric-indicator { background: #8dbabf; }
 .reading-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 10px; color: #85898c; padding: 16px 2px 29px; }
 .reading-meta > span:first-child { display: flex; align-items: center; gap: 7px; }
-.history-card { box-shadow: none; border-radius: 14px; padding: 27px 28px 0; background: #111314; gap: 0; }
+.history-card { box-shadow: none; border-color: #292b2c; border-radius: 14px; padding: 27px 28px 0; background: #111314; gap: 0; }
 .history-header { display: flex; justify-content: space-between; gap: 15px; align-items: center; }
 h2 { font-size: 16px; font-weight: 500; margin: 9px 0 0; letter-spacing: -.3px; }
 h2 > span { color: #808588; font-size: 13px; font-weight: 400; }
