@@ -92,4 +92,9 @@ h2 { font-size: 16px; font-weight: 500; margin: 0; letter-spacing: -.3px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
 .header-actions { display: flex; align-items: center; gap: 8px; }
+.source-footer { display: flex; justify-content: flex-end; padding-top: 12px; }
+.source-link { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 8px; color: #85898c; }
+.source-link:hover, .source-link:focus-visible { color: #e9e9e8; }
+.source-tooltip { position: absolute; right: 0; bottom: 100%; width: max-content; padding: 6px 9px; border: 1px solid #303234; border-radius: 6px; background: #191b1d; color: #e9e9e8; font-size: 11px; visibility: hidden; pointer-events: none; }
+.source-link:hover .source-tooltip, .source-link:focus-visible .source-tooltip { visibility: visible; }
 .range-select { max-width: 100%; border: 1px solid #303234; border-radius: 8px; background: #191b1d; color: #e9e9e8; padding: 8px 10px; font: inherit; font-size: 12px; cursor: pointer; }
