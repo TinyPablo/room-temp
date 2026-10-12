@@ -39,23 +39,22 @@ function roomInsertBore(context is Context, id is Id, part is Query, x is number
     roomCut(context,id+"cut",part,roomCylinder(context,id+"tool",x,y,top-4.5,5.5,diameter));
 }
 
-annotation { "Feature Type Name" : "RoomEnclosureV01" }
-export const roomV01 = defineFeature(function(context is Context, id is Id, definition is map)
+annotation { "Feature Type Name" : "RoomEnclosureV02" }
+export const roomV02 = defineFeature(function(context is Context, id is Id, definition is map)
 precondition
 {
     annotation { "Name" : "Assembly view (disable for printing)" }
     definition.assembled is boolean;
     annotation { "Name" : "Insert bore diameter" }
     isLength(definition.insertDiameter, { (millimeter) : [3.0,3.1,3.4] } as LengthBoundSpec);
-    annotation { "Name" : "Sensor rail opening (PCB and components)" }
-    isLength(definition.sensorEnvelope, { (millimeter) : [1.0,2.5,4.0] } as LengthBoundSpec);
-    annotation { "Name" : "PCB side clearance" }
-    isLength(definition.sensorClearance, { (millimeter) : [0.1,0.25,0.5] } as LengthBoundSpec);
+    annotation { "Name" : "Sensor PCB thickness" }
+    isLength(definition.sensorPcbThickness, { (millimeter) : [1.4,1.5,1.6] } as LengthBoundSpec);
 }
 {
     const bore = definition.insertDiameter / millimeter;
-    const sensorTop = 7 + definition.sensorEnvelope / millimeter;
-    const clearance = definition.sensorClearance / millimeter;
+    const sensorTop = 10 + definition.sensorPcbThickness / millimeter;
+    if (4 - (sensorTop - 10) < 2.4)
+        throw "Insufficient sensor screw engagement";
     // Print coordinates: shell open upwards; invert the assembled unit for shelf use.
     const shell = roomRoundedBox(context,id+"shell",vector(0,0,0),vector(88,62,34),7);
     opFillet(context,id+"outerTop", {
@@ -92,23 +91,16 @@ precondition
     roomJoin(context,id+"baffleJoin",shell,roomBox(context,id+"baffle",vector(2.3,36,2),vector(66,37.6,32)));
     roomCut(context,id+"wireNotchCut",shell,roomBox(context,id+"wireNotch",vector(18,35,17),vector(30,38.6,35)));
 
-    // The rail opening is an envelope, not a measurement of the bare PCB thickness.
-    // The module slides into two edge rails; the removable keeper blocks the entrance.
-    for (var side=0; side<2; side+=1)
+    // Drop-in PCB: x=25..37, y=44..56. Headers face +X into the open bay.
+    // Hole centres are 1.5 mm from the edges, 9 mm apart; PCB rests at z=10.
+    const sensorMounts = [vector(26.5,45.5),vector(26.5,54.5)];
+    for (var i=0; i<2; i+=1)
     {
-        const station=id+("sensorRail"~side);
-        const x=side==0 ? 23.4-clearance : 37+clearance;
-        roomJoin(context,station+"wallJoin",shell,roomBox(context,station+"wall",vector(x,44,2),vector(x+1.6,57.4,sensorTop+1.8)));
-        const a=side==0 ? x : 36;
-        const b=side==0 ? 26 : x+1.6;
-        roomJoin(context,station+"shelfJoin",shell,roomBox(context,station+"shelf",vector(a,44,5.6),vector(b,56.3,7)));
-        const lipA=side==0 ? x : 36.4;
-        const lipB=side==0 ? 25.6 : x+1.6;
-        roomJoin(context,station+"lipJoin",shell,roomBox(context,station+"lip",vector(lipA,44,sensorTop+0.3),vector(lipB,57.4,sensorTop+1.8)));
+        const p=sensorMounts[i];
+        const station=id+("sensorMount"~i);
+        roomJoin(context,station+"join",shell,roomCylinder(context,station+"boss",p[0],p[1],2,8,5.3));
+        roomInsertBore(context,station+"insert",shell,p[0],p[1],10,bore);
     }
-    roomJoin(context,id+"sensorStopJoin",shell,roomBox(context,id+"sensorStop",vector(23,56.3,2),vector(39,57.5,sensorTop+1.8)));
-    roomJoin(context,id+"keeperBossJoin",shell,roomCylinder(context,id+"keeperBoss",31,41,2,sensorTop-1.7,6));
-    roomInsertBore(context,id+"keeperInsert",shell,31,41,sensorTop+0.3,bore);
 
     // Narrow bridges print without internal support and expose the sensor bay to air.
     for (var i=0; i<10; i+=1)
@@ -122,7 +114,7 @@ precondition
         const station=id+("rearVent"~i);
         roomCut(context,station+"cut",shell,roomBox(context,station+"tool",vector(65+i*4, -1, 8),vector(67.4+i*4,3,20)));
     }
-    roomNamePart(context,shell,"ROOM V01 - shell 88 x 62 x 34 - PETG");
+    roomNamePart(context,shell,"ROOM V02 - shell 88 x 62 x 34 - PETG");
 
     // Bottom cover, external face on the bed. 1.5 mm remains under each screw head.
     const dx=100;
@@ -141,38 +133,37 @@ precondition
         roomCut(context,station+"throughCut",lid,roomCylinder(context,station+"through",dx+p[0],p[1],-1,7,2.3));
         roomCut(context,station+"headCut",lid,roomCylinder(context,station+"head",dx+p[0],p[1],-1,3.5,3.8));
     }
-    roomNamePart(context,lid,"ROOM V01 - bottom cover - M2 x 4");
+    roomNamePart(context,lid,"ROOM V02 - bottom cover - M2 x 4");
 
-    const keeper=roomRoundedBox(context,id+"keeper",vector(103,70,0),vector(111,77,1.5),1);
-    roomCut(context,id+"keeperHoleCut",keeper,roomCylinder(context,id+"keeperHole",107,72.5,-1,4,2.3));
-    roomNamePart(context,keeper,"ROOM V01 - sensor keeper - M2 x 4");
-
-    // Solid gauges detect obstructions in the board envelopes.
+    // Swept envelopes check vertical insertion, not just the final board position.
     const picoGauge=roomBox(context,id+"picoGauge",vector(4.1,12.1,8.05),vector(54.9,32.9,8.95));
-    const sensorGauge=roomBox(context,id+"sensorGauge",vector(25.05,44.05,7.05),vector(36.95,55.95,sensorTop-0.05));
-    const gauges=qUnion([picoGauge,sensorGauge]);
-    if (size(evCollision(context,{"tools":gauges,"targets":shell}))!=0)
-        throw "A mounting feature intersects a PCB envelope";
-    opDeleteBodies(context,id+"deleteGauges",{"entities":gauges});
+    const sensorSweep=roomBox(context,id+"sensorSweep",vector(25,44,10.01),vector(37,56,40));
+    // Reserve 25 mm beyond the PCB edge for bent headers and female connectors.
+    const connectorSweep=roomBox(context,id+"connectorSweep",vector(33,44,7),vector(62,56,40));
+    var gauges=[picoGauge,sensorSweep,connectorSweep];
+    for (var i=0; i<2; i+=1)
+    {
+        const p=sensorMounts[i];
+        gauges=append(gauges,roomCylinder(context,id+("driverGauge"~i),p[0],p[1],10.01,30,6));
+    }
+    if (size(evCollision(context,{"tools":qUnion(gauges),"targets":shell}))!=0)
+        throw "A board insertion path, connector envelope or screwdriver path is obstructed";
+    opDeleteBodies(context,id+"deleteGauges",{"entities":qUnion(gauges)});
     if (definition.assembled)
     {
-        opTransform(context,id+"keeperAssembly",{
-            "bodies":keeper,
-            "transform":transform(vector(-76,-31.5,sensorTop+0.3)*millimeter)
-        });
         opTransform(context,id+"shellAssembly",{
-            "bodies":qUnion([shell,keeper]),
+            "bodies":shell,
             "transform":rotationAround(line(vector(0,31,19)*millimeter,vector(1,0,0)),180*degree)
         });
         opTransform(context,id+"lidAssembly",{
             "bodies":lid,"transform":transform(vector(-100,0,0)*millimeter)
         });
-        for (var pair in [[lid,shell],[keeper,shell],[keeper,lid]])
+        for (var pair in [[lid,shell]])
             for (var clash in evCollision(context,{"tools":pair[0],"targets":pair[1]}))
                 if (clash["type"] != ClashType.ABUT_NO_CLASS)
                     throw "Printed parts overlap in the assembly";
     }
-    for (var part in [shell,lid,keeper])
+    for (var part in [shell,lid])
         if (size(evaluateQuery(context,part))!=1 || evVolume(context,{"entities":part})<=0*millimeter^3)
             throw "Each printed part must be one connected solid";
-}, { "assembled" : false, "insertDiameter" : 3.1*millimeter, "sensorEnvelope" : 2.5*millimeter, "sensorClearance" : 0.25*millimeter });
+}, { "assembled" : false, "insertDiameter" : 3.1*millimeter, "sensorPcbThickness" : 1.5*millimeter });

@@ -15,7 +15,7 @@ Zrzuty lokalnego podglądu znajdują się w ignorowanym katalogu `artifacts/`. P
 
 ## Obudowa
 
-FeatureScript został skompilowany i wykonany w Onshape dla układu do druku oraz złożenia. Kontrole potwierdziły trzy osobne, połączone wewnętrznie bryły o dodatniej objętości, brak przecięć z uproszczonymi obrysami płytek i brak nakładania się drukowanych części po złożeniu. Dopuszczone są powierzchnie styku. Model zapisano w osobnym workspace; odnośnik znajduje się w [instrukcji obudowy](enclosure.md).
+FeatureScript został skompilowany i wykonany w Onshape dla układu do druku oraz złożenia. Kontrole V02 potwierdziły dwie osobne, połączone wewnętrznie bryły o dodatniej objętości, brak przecięć z uproszczonym obrysem Pico, pionową drogą wkładania czujnika, przestrzenią złączy (25 mm za krawędzią PCB) i drogami śrubokręta Ø6 mm i brak nakładania się drukowanych części po złożeniu. Dopuszczone są powierzchnie styku. Model zapisano w osobnym workspace; odnośnik znajduje się w [instrukcji obudowy](enclosure.md).
 
 Kontrola nie obejmuje dokładnych brył przewodów, wtyczki USB, headerów i elementów na module czujnika.
 
