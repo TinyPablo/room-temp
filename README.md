@@ -1,21 +1,47 @@
 # Room
 
-Pomiar temperatury i wilgotności jednego pokoju: Raspberry Pi Pico 2 W, moduł SHT3x przez I²C, MicroPython oraz publiczny panel React z shadcn/ui.
+Room temperature and humidity monitoring with a Raspberry Pi Pico 2 W, an SHT3x sensor and a React dashboard. A FastAPI backend polls the device every minute and stores up to 365 days of readings in SQLite. Missing readings remain gaps in the history.
 
-Pico udostępnia świeży pomiar przez HTTP w LAN. Backend FastAPI pobiera go co minutę i zapisuje w SQLite. Historia obejmuje 365 dni, a domyślny widok ostatnie 24 godziny. Przerwy w dostępności pozostają lukami. Strona nie wymaga logowania; klucz dostępu do Pico pozostaje w backendzie.
+## Hardware and firmware
 
-## Elementy projektu
+Connect the sensor with power disconnected:
 
-- `firmware/`: MicroPython, Wi-Fi, sterownik SHT3x z CRC, watchdog, tryb serwisowy.
-- `backend/`: kolektor, baza i publiczne API.
-- `frontend/`: responsywny panel temperatury i wilgotności.
-- `enclosure/`: model obudowy w FeatureScript.
-- [Podłączenie i uruchomienie Pico](docs/hardware.md).
-- [Obudowa, druk i montaż](docs/enclosure.md).
-- [Docker, serwer i domena](docs/deployment.md).
-- [Weryfikacja prototypu](docs/verification.md).
+| SHT3x | Pico 2 W | Physical pin |
+| --- | --- | --- |
+| VCC | 3V3 OUT | 36 |
+| GND | GND | 38 |
+| SDA | GP0 | 1 |
+| SCL | GP1 | 2 |
 
-## Testy i lokalny podgląd
+Install MicroPython for the Pico 2 W. Copy `firmware/secrets.example.py` to `firmware/secrets.py` and fill in the Wi-Fi credentials and `API_TOKEN`. Generate a token with:
+
+```bash
+python3 -c 'import secrets; print(secrets.token_hex(32))'
+```
+
+Check `STATIC_IPV4` in `firmware/config.py` against the local network; reserve the device address outside the DHCP pool. Use a 2.4 GHz Wi-Fi network accessible from the backend.
+
+Upload `config.py`, `protocol.py`, `sht3x.py`, `secrets.py` and finally `main.py` from `firmware/` to the device root. For maintenance, connect GP15 to GND before powering on to disable Wi-Fi and the watchdog. Remove the jumper before normal operation. Keep the device HTTP API on the local network.
+
+## Docker
+
+```bash
+cp .env.example .env
+```
+
+Set `PICO_IP` to the device address and `PICO_TOKEN` to the firmware's `API_TOKEN`. `ROOM_PORT` defaults to `8765`; `IMAGE_TAG` defaults to `local`.
+
+```bash
+docker compose config --quiet
+docker compose up -d --build
+curl --fail http://127.0.0.1:8765/api/health
+```
+
+Open `http://127.0.0.1:8765` on the Docker host. The application binds to host loopback and serves the frontend and API from container port `8080`. Remote access requires a separately configured proxy or tunnel.
+
+Readings persist in the `room_data` volume at `/data/room.db`. Do not use `docker compose down -v` unless the history should be deleted. `/api/health` checks the collector and storage; an offline Pico is reported by `/api/room?range=24h`.
+
+## Development
 
 ```bash
 python3 -m venv .venv
@@ -26,10 +52,12 @@ npm --prefix frontend run build
 .venv/bin/python scripts/preview.py
 ```
 
-Podgląd jest dostępny pod `http://127.0.0.1:8765`. Używa wyłącznie syntetycznych danych w `artifacts/preview.db`, w tym przykładowej przerwy w pomiarach. Nie łączy się z Pico i nie jest trybem produkcyjnym. Zakończenie: Ctrl+C. Dane podglądu są generowane na nowo przy uruchomieniu.
+The preview runs at `http://127.0.0.1:8765` using synthetic data in `artifacts/preview.db`, regenerated at each start. It does not connect to the Pico. Stop it with Ctrl+C.
 
-## Konfiguracja rzeczywistych odczytów
+Keep `.env`, `firmware/secrets.py` and databases out of version control.
 
-Na Pico: `firmware/secrets.py` utworzony z przykładu, zapisany na urządzeniu jako `secrets.py`. Na serwerze: `.env` utworzony z `.env.example`. `API_TOKEN` Pico i `PICO_TOKEN` backendu muszą być identyczne. Docelowy adres Pico to `192.168.1.205`, ustawiany statycznie przez `STATIC_IPV4` w `firmware/config.py`.
+## Enclosure
 
-Uruchomienie przez Docker i konfigurację istniejącego tunelu opisuje instrukcja wdrożenia. W repozytorium nie przechowuje się haseł Wi-Fi, tokenów ani rzeczywistych baz danych.
+[`enclosure/room_v02.fs`](enclosure/room_v02.fs) contains the Onshape FeatureScript source for an 88 × 62 × 38 mm enclosure. Use `assembled = false` for printing and `true` to inspect the assembly. Export the body and lid as STL in millimetres; print with their outer closed faces on the bed.
+
+Assembly uses ten M2 inserts and ten M2 × 4 mm screws: four each for the lid and Pico, and two for the sensor. Check component fit, screw clearance and ventilation on the physical print.
