@@ -1,35 +1,31 @@
 # Room
 
-Pomiar temperatury i wilgotności jednego pokoju: Raspberry Pi Pico 2 W, moduł SHT3x przez I²C, MicroPython oraz publiczny panel React z shadcn/ui.
+My little bedtime weather station. I like my room around 16-18°C for sleep. A quick check tells me whether to crack a window, turn on the heating, or borrow some warmth from another room. Less guessing, more cozy sleep.
 
-Pico udostępnia świeży pomiar przez HTTP w LAN. Backend FastAPI pobiera go co minutę i zapisuje w SQLite. Historia obejmuje 365 dni, a domyślny widok ostatnie 24 godziny. Przerwy w dostępności pozostają lukami. Strona nie wymaga logowania; klucz dostępu do Pico pozostaje w backendzie.
+Pico 2 W + SHT3x → FastAPI + SQLite → React dashboard. Temperature and humidity, updated every minute.
 
-## Elementy projektu
+## The build
 
-- `firmware/`: MicroPython, Wi-Fi, sterownik SHT3x z CRC, watchdog, tryb serwisowy.
-- `backend/`: kolektor, baza i publiczne API.
-- `frontend/`: responsywny panel temperatury i wilgotności.
-- `enclosure/`: model obudowy w FeatureScript.
-- [Podłączenie i uruchomienie Pico](docs/hardware.md).
-- [Obudowa, druk i montaż](docs/enclosure.md).
-- [Docker, serwer i domena](docs/deployment.md).
-- [Weryfikacja prototypu](docs/verification.md).
+![Finished enclosure with USB power connected](assets/enclosure-usb.jpg)
 
-## Testy i lokalny podgląd
+| Ventilation | Inside |
+| --- | --- |
+| ![Ventilation slots](assets/enclosure-vents.jpg) | ![Pico and sensor wiring](assets/enclosure-interior.jpg) |
+
+GPT-6 Astra designed the enclosure; I printed it on my Creality K1C in PETG. The [Onshape FeatureScript source](enclosure/room_v02.fs) is included.
+
+| Onshape model | Body and lid |
+| --- | --- |
+| ![Enclosure perspective in Onshape](assets/enclosure-cad-perspective.png) | ![Enclosure and lid viewed from above in Onshape](assets/enclosure-cad-top.png) |
+
+## Quick setup
+
+1. Wire the SHT3x to the Pico: VCC → 3V3, GND → GND, SDA → GP0, SCL → GP1.
+2. Install MicroPython for Pico 2 W. Copy `firmware/secrets.example.py` to `firmware/secrets.py`, fill in Wi-Fi credentials and a random API token, and adjust `STATIC_IPV4` in `firmware/config.py` for your LAN. Upload the firmware modules and `secrets.py` to the Pico root, with `main.py` last.
+3. Copy `.env.example` to `.env`. Set `PICO_IP` to the Pico address and `PICO_TOKEN` to the same API token, then run:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -r backend/requirements-dev.txt
-.venv/bin/python -m unittest discover -s tests -v
-npm --prefix frontend ci
-npm --prefix frontend run build
-.venv/bin/python scripts/preview.py
+docker compose up -d --build
 ```
 
-Podgląd jest dostępny pod `http://127.0.0.1:8765`. Używa wyłącznie syntetycznych danych w `artifacts/preview.db`, w tym przykładowej przerwy w pomiarach. Nie łączy się z Pico i nie jest trybem produkcyjnym. Zakończenie: Ctrl+C. Dane podglądu są generowane na nowo przy uruchomieniu.
-
-## Konfiguracja rzeczywistych odczytów
-
-Na Pico: `firmware/secrets.py` utworzony z przykładu, zapisany na urządzeniu jako `secrets.py`. Na serwerze: `.env` utworzony z `.env.example`. `API_TOKEN` Pico i `PICO_TOKEN` backendu muszą być identyczne. Docelowy adres Pico to `192.168.1.205`, ustawiany statycznie przez `STATIC_IPV4` w `firmware/config.py`.
-
-Uruchomienie przez Docker i konfigurację istniejącego tunelu opisuje instrukcja wdrożenia. W repozytorium nie przechowuje się haseł Wi-Fi, tokenów ani rzeczywistych baz danych.
+Open **http://127.0.0.1:8765** on the Docker host. The backend must be able to reach the Pico over LAN. Readings persist in a Docker volume; keep `.env` and `secrets.py` private.

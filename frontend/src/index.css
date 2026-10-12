@@ -31,7 +31,6 @@ button:focus-visible, a:focus-visible { outline: 2px solid #e7aa7a; outline-offs
 .brand { display: flex; align-items: center; font-size: 27px; font-weight: 600; letter-spacing: -1.2px; color: #f0efed; text-decoration: none; }
 .brand-icon { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #39352f; border-radius: 10px; margin-right: 12px; color: #e7aa7a; background: #1b1815; }
 .brand-dot { color: #e7aa7a; }
-.site-label { font-size: 10px; letter-spacing: 1.8px; color: #898d91; }
 .intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 51px 0 34px; }
 .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; letter-spacing: 1.6px; font-weight: 500; color: #94989b; }
 .small-line { width: 16px; height: 1px; background: #e7aa7a; }
@@ -89,7 +88,6 @@ footer > div { display: flex; align-items: center; gap: 10px; }
 @media (max-width: 640px) {
   .page-shell { padding: 0 20px; }
   .topbar { height: 76px; }
-  .site-label { font-size: 8px; letter-spacing: 1px; }
   .intro { align-items: flex-start; flex-direction: column; padding: 31px 0 25px; gap: 20px; }
   h1 { font-size: 29px; }
   .readings { gap: 11px; }

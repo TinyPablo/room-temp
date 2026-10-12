@@ -78,7 +78,6 @@ export default function App() {
   return <main className="page-shell">
     <header className="topbar">
       <a href="/" className="brand" aria-label="Room - strona główna"><span className="brand-icon"><House size={18} strokeWidth={1.6} /></span>room<span className="brand-dot">.</span></a>
-      <span className="site-label">PAWELZAWADA.DEV</span>
     </header>
 
     <section className="intro" aria-labelledby="page-title">
