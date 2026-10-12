@@ -67,10 +67,21 @@ export default function App() {
   const unit = temperature ? "°C" : "%"
   const color = temperature ? "#e7aa7a" : "#8dbabf"
   const prefix = temperature ? "temperature" : "humidity"
-  const points = (data?.points ?? []).flatMap(p => p.gap_before ? [
+  const history = data?.points ?? []
+  const firstReading = history.findIndex(p => p[metric] != null)
+  let lastReading = history.length - 1
+  while (lastReading >= firstReading && history[lastReading]?.[metric] == null) lastReading--
+  // Trim empty edges while preserving gaps between recorded readings.
+  const available = firstReading < 0 ? [] : history.slice(firstReading, lastReading + 1)
+  const points = available.flatMap((p, index) => index > 0 && p.gap_before ? [
     { ...p, ts: p.ts - 1, temperature_c: null, humidity_pct: null }, p,
   ] : [p])
-  const hasPoints = points.some(p => p[metric] != null)
+  const readingCount = available.filter(p => p[metric] != null).length
+  const hasPoints = readingCount > 0
+  const firstTs = available[0]?.ts ?? 0
+  const lastTs = available[available.length - 1]?.ts ?? firstTs
+  const timeDomain: [number, number] = firstTs === lastTs ? [firstTs - 30, lastTs + 30] : [firstTs, lastTs]
+  const shortHistory = lastTs - firstTs < 86400
   const selectedRange = ranges.find(r => r.value === (data?.range ?? range))!
   const ageText = age < 60 ? "just now" : age < 3600 ? `${Math.floor(age / 60)} min ago` :
     latest ? date(latest.measured_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "waiting for first reading"
@@ -104,10 +115,10 @@ export default function App() {
       <div className="chart-wrap" aria-busy={loading} role="img" aria-label={`Chart: ${temperature ? "temperature" : "humidity"}, ${selectedRange.label}. Missing readings are shown as gaps.`}>
         {hasPoints ? <ResponsiveContainer width="100%" height="100%"><LineChart data={points} margin={{ top: 15, right: 12, bottom: 5, left: -22 }} accessibilityLayer>
           <CartesianGrid vertical={false} stroke="#252729" strokeDasharray="3 5" />
-          <XAxis dataKey="ts" type="number" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} tick={{ fill: "#85898d", fontSize: 11 }} minTickGap={45} tickMargin={16} tickFormatter={ts => date(ts, data?.range === "24h" ? { hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short" })} />
+          <XAxis dataKey="ts" type="number" domain={timeDomain} tickLine={false} axisLine={false} tick={{ fill: "#85898d", fontSize: 11 }} minTickGap={45} tickMargin={16} tickFormatter={ts => date(ts, shortHistory ? { hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short" })} />
           <YAxis domain={temperature ? ["auto", "auto"] : [0, 100]} tickLine={false} axisLine={false} tick={{ fill: "#85898d", fontSize: 11 }} tickFormatter={v => `${number(v)}${unit}`} width={70} />
           <Tooltip contentStyle={{ background: "#191b1d", border: "1px solid #343638", borderRadius: 10, color: "#eee", fontSize: 12 }} labelFormatter={ts => date(Number(ts), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} formatter={value => [`${number(Number(value))} ${unit}`, temperature ? "Temperature" : "Humidity"]} />
-          <Line type="linear" dataKey={metric} stroke={color} strokeWidth={2} dot={points.filter(p => p[metric] != null).length < 3 ? { r: 3 } : false} activeDot={{ r: 4, stroke: "#151617", strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
+          <Line type="monotoneX" dataKey={metric} stroke={color} strokeWidth={2} dot={readingCount < 3 ? { r: 3 } : false} activeDot={{ r: 4, stroke: "#151617", strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
         </LineChart></ResponsiveContainer> : <div className="empty-chart"><span className="empty-icon">{temperature ? <Thermometer size={25} /> : <Droplets size={25} />}</span><h3>{loading ? "Loading readings" : "No history yet"}</h3><p>{loading ? "Readings will appear shortly." : "The chart will appear once sensor readings arrive."}</p></div>}
       </div>
       <div className="chart-stats">
