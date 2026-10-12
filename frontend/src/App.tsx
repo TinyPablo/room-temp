@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ArrowDown, ArrowUp, Droplets, House, RefreshCw, Thermometer, WifiOff } from "lucide-react"
+import { ArrowDown, ArrowUp, Droplets, Github, House, RefreshCw, Thermometer, WifiOff } from "lucide-react"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -117,7 +117,12 @@ export default function App() {
       </div>
     </Card>
 
-
+    <footer className="source-footer">
+      <a className="source-link" href="https://github.com/TinyPablo/room-temp" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub (opens in a new tab)">
+        <Github size={18} aria-hidden="true" />
+        <span className="source-tooltip" aria-hidden="true">View source on GitHub</span>
+      </a>
+    </footer>
   </main>
 }
 
