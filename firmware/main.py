@@ -56,11 +56,8 @@ def serve_client(client, token, sensor):
     return sensor
 
 
-def run():
-    from secrets import WIFI_SSID, WIFI_PASSWORD, API_TOKEN, WIFI_COUNTRY
-    if not WIFI_SSID or not WIFI_PASSWORD or len(API_TOKEN) < 32:
-        raise ValueError("Configure secrets.py before starting")
-    rp2.country(WIFI_COUNTRY)
+def run(settings):
+    rp2.country(settings.WIFI_COUNTRY)
     led = machine.Pin("LED", machine.Pin.OUT, value=0)
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -91,7 +88,7 @@ def run():
             if time.ticks_diff(now, retry_at) >= 0:
                 try:
                     wlan.disconnect()
-                    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
+                    wlan.connect(settings.WIFI_SSID, settings.WIFI_PASSWORD)
                 except OSError:
                     pass
                 retry_at = time.ticks_add(now, config.RECONNECT_MS)
@@ -112,7 +109,7 @@ def run():
                 client = None
                 try:
                     client, _ = listener.accept()
-                    sensor = serve_client(client, API_TOKEN, sensor)
+                    sensor = serve_client(client, settings.API_TOKEN, sensor)
                 except OSError:
                     pass
                 finally:
@@ -124,14 +121,33 @@ def run():
         time.sleep_ms(25)
 
 
-if __name__ == "__main__":
+def start():
+    led = machine.Pin("LED", machine.Pin.OUT, value=0)
+    if not machine.Pin(config.MAINTENANCE_PIN, machine.Pin.IN, machine.Pin.PULL_UP).value():
+        print("Maintenance mode: Wi-Fi and watchdog disabled")
+        return
     try:
-        run()
+        import secrets as settings
+        token = settings.API_TOKEN
+        if (not settings.WIFI_SSID or not settings.WIFI_PASSWORD or len(token) < 32 or
+                any(not ("a" <= c <= "z" or "A" <= c <= "Z" or "0" <= c <= "9") for c in token)):
+            raise ValueError("Invalid configuration")
+        if len(settings.WIFI_COUNTRY) != 2:
+            raise ValueError("Invalid country code")
+    except (ImportError, AttributeError, TypeError, ValueError):
+        print("Configure secrets.py, then reset. Watchdog is disabled.")
+        return
+    try:
+        run(settings)
     except KeyboardInterrupt:
-        machine.Pin("LED", machine.Pin.OUT).off()
+        led.off()
         print("Stopped; power-cycle for normal operation. Active watchdog may reset the board.")
     except Exception as error:
         # Avoid writing secrets to serial output; the watchdog or explicit reset recovers.
         print("Startup/runtime failure:", type(error).__name__)
         time.sleep_ms(2000)
         machine.reset()
+
+
+if __name__ == "__main__":
+    start()

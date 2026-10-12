@@ -75,14 +75,16 @@ class Store:
                 FROM readings WHERE ts >= ? AND ts <= ?""", (now - duration, now)).fetchone()
         by_bucket = {r["bucket"]: r for r in rows}
         points = []
+        previous_incomplete = False
         for ts in range(start, now // bucket * bucket + 1, bucket):
             row = by_bucket.get(ts)
-            incomplete = bool(row and (row["samples"] < row["attempts"] or
-                              row["last_ts"] - row["first_ts"] > (row["attempts"] - 1) * 60))
+            expected = (min(ts + bucket - 60, now // 60 * 60) - ts) // 60 + 1
+            incomplete = row is None or row["samples"] < expected
             points.append({"ts": ts,
                            "temperature_c": round(row["temperature_c"], 2) if row and row["samples"] else None,
                            "humidity_pct": round(row["humidity_pct"], 2) if row and row["samples"] else None,
-                           "gap_before": incomplete})
+                           "gap_before": incomplete or previous_incomplete})
+            previous_incomplete = incomplete
         age = now - latest["measured_at"] if latest else None
         online = bool(last and last["temperature_c"] is not None and age is not None and 0 <= age <= 150)
         return {"server_time": now, "status": "online" if online else "offline",

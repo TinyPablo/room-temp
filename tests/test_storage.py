@@ -53,6 +53,16 @@ class StorageTests(unittest.TestCase):
         self.assertLessEqual(len(result["points"]), 1462)
         self.assertTrue(any(p["gap_before"] for p in result["points"]))
 
+    def test_aggregated_gap_at_bucket_boundary_breaks_both_sides(self):
+        boundary = self.now // 600 * 600
+        for offset in range(-1200, 600, 60):
+            if offset not in (-120, -60):
+                self.store.record(boundary + offset, self.reading)
+        result = self.store.snapshot(boundary + 540, "7d")
+        points = {p["ts"]: p for p in result["points"]}
+        self.assertTrue(points[boundary - 600]["gap_before"])
+        self.assertTrue(points[boundary]["gap_before"])
+
 
 if __name__ == "__main__":
     unittest.main()
