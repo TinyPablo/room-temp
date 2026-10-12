@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+secrets.py
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+data/
+artifacts/
+*.db
+*.db-shm
+*.db-wal
