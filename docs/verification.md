@@ -23,7 +23,7 @@ Kontrola nie obejmuje dokładnych brył przewodów, wtyczki USB, headerów i ele
 
 - Wgranie firmware na konkretny Pico 2 W i odczyt rzeczywistego SHT3x.
 - Zanik zasilania, przerwa Wi-Fi, działanie LED i watchdoga na urządzeniu.
-- Potwierdzenie rezerwacji DHCP `192.168.1.205`.
+- Potwierdzenie statycznego adresu `192.168.1.205`, maski, bramy i DNS na Pico oraz braku konfliktu z pulą DHCP.
 - Fizyczne dopasowanie wydruku, jumperów, insertów i przewodu USB.
 - Porównanie pomiaru w otwartej i zamkniętej obudowie.
 - Wdrożenie na serwerze, konfiguracja DNS/ingress i test publicznej domeny.

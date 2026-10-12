@@ -61,6 +61,8 @@ def run(settings):
     led = machine.Pin("LED", machine.Pin.OUT, value=0)
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
+    wlan.disconnect()
+    wlan.ifconfig(config.STATIC_IPV4)
     print("MAC:", ":".join("%02x" % b for b in wlan.config("mac")))
     wdt = machine.WDT(timeout=config.WATCHDOG_MS)
     listener = None
@@ -88,6 +90,7 @@ def run(settings):
             if time.ticks_diff(now, retry_at) >= 0:
                 try:
                     wlan.disconnect()
+                    wlan.ifconfig(config.STATIC_IPV4)
                     wlan.connect(settings.WIFI_SSID, settings.WIFI_PASSWORD)
                 except OSError:
                     pass
