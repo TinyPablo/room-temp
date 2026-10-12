@@ -6,3 +6,5 @@ HTTP_PORT = 80
 WATCHDOG_MS = 8_000
 RECONNECT_MS = 20_000
 MAINTENANCE_PIN = 15
+# Static IPv4: address, netmask, gateway, DNS. Verify gateway/DNS for the LAN.
+STATIC_IPV4 = ("192.168.1.205", "255.255.255.0", "192.168.1.1", "192.168.1.1")

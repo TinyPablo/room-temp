@@ -11,7 +11,7 @@
 | Dane | wolumen `room-temp_room_data`, baza `/data/room.db` |
 | Port aplikacji w kontenerze | `8080` |
 | Publikowany port serwera | `127.0.0.1:8765` |
-| Pico | `192.168.1.205:80`, rezerwacja DHCP |
+| Pico | `192.168.1.205:80`, statyczna konfiguracja firmware |
 | Domena | `room.pawelzawada.dev` |
 
 Backend i zbudowany frontend działają w jednym kontenerze. SQLite nie udostępnia portu sieciowego. Proces działa jako UID 10001. System plików kontenera jest tylko do odczytu, poza wolumenem danych i `/tmp`. Uvicorn uruchamia jeden worker, aby nie dublować kolektora pomiarów.
