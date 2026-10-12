@@ -16,11 +16,11 @@ type Snapshot = {
     humidity_min: number | null; humidity_max: number | null; humidity_avg: number | null; samples: number };
 }
 const ranges: { value: Range; label: string }[] = [
-  { value: "24h", label: "24 godz." }, { value: "7d", label: "7 dni" },
-  { value: "30d", label: "30 dni" }, { value: "1y", label: "Rok" },
+  { value: "24h", label: "Last 24 hours" }, { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" }, { value: "1y", label: "Last year" },
 ]
-const number = (n: number | null | undefined) => n == null ? "-" : n.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-const date = (ts: number, options: Intl.DateTimeFormatOptions) => new Date(ts * 1000).toLocaleString("pl-PL", { timeZone: "Europe/Warsaw", ...options })
+const number = (n: number | null | undefined) => n == null ? "-" : n.toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+const date = (ts: number, options: Intl.DateTimeFormatOptions) => new Date(ts * 1000).toLocaleString("en-GB", { timeZone: "Europe/Warsaw", hour12: false, ...options })
 
 export default function App() {
   const [range, setRange] = useState<Range>("24h")
@@ -72,50 +72,52 @@ export default function App() {
   ] : [p])
   const hasPoints = points.some(p => p[metric] != null)
   const selectedRange = ranges.find(r => r.value === (data?.range ?? range))!
-  const ageText = age < 60 ? "przed chwilą" : age < 3600 ? `${Math.floor(age / 60)} min temu` :
-    latest ? date(latest.measured_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "oczekiwanie na pierwszy pomiar"
+  const ageText = age < 60 ? "just now" : age < 3600 ? `${Math.floor(age / 60)} min ago` :
+    latest ? date(latest.measured_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "waiting for first reading"
 
   return <main className="page-shell">
     <header className="topbar">
-      <a href="/" className="brand" aria-label="Room - strona główna"><span className="brand-icon"><House size={18} strokeWidth={1.6} /></span>room<span className="brand-dot">.</span></a>
+      <a href="/" className="brand" aria-label="room-temp home"><span className="brand-icon"><House size={18} strokeWidth={1.6} /></span>room<span className="brand-separator">-</span>temp</a>
+      <div className="header-actions">
+        <div className={cn("connection", online && "connected")} role="status"><span className="status-dot" />{loading && !data ? "Connecting" : online ? "Sensor online" : error ? "Connection lost" : "Sensor offline"}</div>
+        <Button variant="ghost" size="icon" aria-label="Refresh readings" disabled={loading} onClick={() => setRefresh(v => v + 1)}><RefreshCw size={14} className={loading ? "refreshing" : ""} /></Button>
+      </div>
     </header>
 
-    <section className="intro" aria-labelledby="page-title">
-      <div><div className="eyebrow"><span className="small-line" /> DOMOWY KLIMAT</div><h1 id="page-title">Jak jest w pokoju<span>?</span></h1><p>Temperatura i wilgotność. Po prostu.</p></div>
-      <div className={cn("connection", online && "connected")} role="status"><span className="status-dot" />{loading && !data ? "Łączenie" : online ? "Czujnik online" : error ? "Brak połączenia ze stroną" : "Czujnik offline"}</div>
+    {(error || (data && !online)) && <div className="notice" role="status"><WifiOff size={16} /><span>{error ? "Unable to load readings. Retrying automatically." : "No recent reading. Missing readings appear as gaps in the chart."}{latest ? " Showing the last saved reading." : ""}</span></div>}
+
+    <section className="readings" aria-label="Latest reading">
+      <MetricCard label="Temperature" value={latest?.temperature_c} unit="°C" icon={<Thermometer size={20} />} accent="warm" active={temperature} onClick={() => setMetric("temperature_c")} stale={!!latest && !online} loading={loading && !data} />
+      <MetricCard label="Humidity" value={latest?.humidity_pct} unit="%" icon={<Droplets size={20} />} accent="cool" active={!temperature} onClick={() => setMetric("humidity_pct")} stale={!!latest && !online} loading={loading && !data} />
     </section>
 
-    {(error || (data && !online)) && <div className="notice" role="status"><WifiOff size={16} /><span>{error ? "Nie można pobrać danych. Spróbujemy ponownie automatycznie." : "Brak aktualnego odczytu. Przerwa pozostanie luką w historii."}{latest ? " Poniżej ostatni zapisany pomiar." : ""}</span></div>}
-
-    <section className="readings" aria-label="Ostatni pomiar">
-      <MetricCard label="Temperatura" value={latest?.temperature_c} unit="°C" icon={<Thermometer size={20} />} accent="warm" active={temperature} onClick={() => setMetric("temperature_c")} stale={!!latest && !online} loading={loading && !data} />
-      <MetricCard label="Wilgotność" value={latest?.humidity_pct} unit="%" icon={<Droplets size={20} />} accent="cool" active={!temperature} onClick={() => setMetric("humidity_pct")} stale={!!latest && !online} loading={loading && !data} />
-    </section>
-
-    <div className="reading-meta"><span><span className={cn("tiny-dot", online && "live")} />Ostatni pomiar: {ageText}</span><span>Pomiar co minutę</span></div>
+    <div className="reading-meta"><span><span className={cn("tiny-dot", online && "live")} />Latest reading: {ageText}</span><span>Measured every minute</span></div>
 
     <Card className="history-card">
-      <div className="history-header"><div><div className="eyebrow">HISTORIA POMIARÓW</div><h2>{temperature ? "Temperatura" : "Wilgotność"}<span> / {selectedRange.label.toLowerCase()}</span></h2></div>
-        <div className="range-control" role="group" aria-label="Zakres historii">{ranges.map(r => <Button key={r.value} variant="ghost" size="sm" aria-pressed={range === r.value} className={cn("range-button", range === r.value && "selected")} onClick={() => setRange(r.value)}>{r.label}</Button>)}</div>
+      <div className="history-header">
+        <h2>{temperature ? "Temperature" : "Humidity"}</h2>
+        <select className="range-select" aria-label="History range" value={range} onChange={event => setRange(event.target.value as Range)}>
+          {ranges.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+        </select>
       </div>
-      <div className="chart-caption"><span><span className="legend-line" style={{ background: color }} />{temperature ? "Temperatura, °C" : "Wilgotność względna, %"}</span><span>{data && data.bucket_seconds > 60 ? `Średnie co ${data.bucket_seconds / 60} min` : "Odczyty minutowe"}</span></div>
-      <div className="chart-wrap" aria-busy={loading} role="img" aria-label={`Wykres: ${temperature ? "temperatura" : "wilgotność"}, ${selectedRange.label}. Przerwy w pomiarach nie są łączone.`}>
+      <div className="chart-caption"><span>{data && data.bucket_seconds > 60 ? `${data.bucket_seconds / 60}-minute averages` : "One-minute readings"}</span></div>
+      <div className="chart-wrap" aria-busy={loading} role="img" aria-label={`Chart: ${temperature ? "temperature" : "humidity"}, ${selectedRange.label}. Missing readings are shown as gaps.`}>
         {hasPoints ? <ResponsiveContainer width="100%" height="100%"><LineChart data={points} margin={{ top: 15, right: 12, bottom: 5, left: -22 }} accessibilityLayer>
           <CartesianGrid vertical={false} stroke="#252729" strokeDasharray="3 5" />
           <XAxis dataKey="ts" type="number" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} tick={{ fill: "#85898d", fontSize: 11 }} minTickGap={45} tickMargin={16} tickFormatter={ts => date(ts, data?.range === "24h" ? { hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short" })} />
-          <YAxis domain={temperature ? ["auto", "auto"] : [0, 100]} tickLine={false} axisLine={false} tick={{ fill: "#85898d", fontSize: 11 }} tickFormatter={v => number(v)} width={60} />
-          <Tooltip contentStyle={{ background: "#191b1d", border: "1px solid #343638", borderRadius: 10, color: "#eee", fontSize: 12 }} labelFormatter={ts => date(Number(ts), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} formatter={value => [`${number(Number(value))} ${unit}`, temperature ? "Temperatura" : "Wilgotność"]} />
+          <YAxis domain={temperature ? ["auto", "auto"] : [0, 100]} tickLine={false} axisLine={false} tick={{ fill: "#85898d", fontSize: 11 }} tickFormatter={v => `${number(v)}${unit}`} width={70} />
+          <Tooltip contentStyle={{ background: "#191b1d", border: "1px solid #343638", borderRadius: 10, color: "#eee", fontSize: 12 }} labelFormatter={ts => date(Number(ts), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} formatter={value => [`${number(Number(value))} ${unit}`, temperature ? "Temperature" : "Humidity"]} />
           <Line type="linear" dataKey={metric} stroke={color} strokeWidth={2} dot={points.filter(p => p[metric] != null).length < 3 ? { r: 3 } : false} activeDot={{ r: 4, stroke: "#151617", strokeWidth: 2 }} connectNulls={false} isAnimationActive={false} />
-        </LineChart></ResponsiveContainer> : <div className="empty-chart"><span className="empty-icon">{temperature ? <Thermometer size={25} /> : <Droplets size={25} />}</span><h3>{loading ? "Wczytywanie pomiarów" : "Jeszcze bez historii"}</h3><p>{loading ? "Za chwilę pojawią się tutaj dane." : "Wykres pojawi się po odebraniu danych z czujnika."}</p></div>}
+        </LineChart></ResponsiveContainer> : <div className="empty-chart"><span className="empty-icon">{temperature ? <Thermometer size={25} /> : <Droplets size={25} />}</span><h3>{loading ? "Loading readings" : "No history yet"}</h3><p>{loading ? "Readings will appear shortly." : "The chart will appear once sensor readings arrive."}</p></div>}
       </div>
       <div className="chart-stats">
-        <Stat label="Minimum" value={data?.stats[`${prefix}_min`]} unit={unit} icon={<ArrowDown size={13} />} />
-        <Stat label="Średnia" value={data?.stats[`${prefix}_avg`]} unit={unit} />
-        <Stat label="Maksimum" value={data?.stats[`${prefix}_max`]} unit={unit} icon={<ArrowUp size={13} />} />
+        <Stat label="Min" value={data?.stats[`${prefix}_min`]} unit={unit} icon={<ArrowDown size={13} />} />
+        <Stat label="Avg" value={data?.stats[`${prefix}_avg`]} unit={unit} />
+        <Stat label="Max" value={data?.stats[`${prefix}_max`]} unit={unit} icon={<ArrowUp size={13} />} />
       </div>
     </Card>
 
-    <footer><span>Jeden pokój. Trochę danych.</span><div><span>Historia do 365 dni · czas w Polsce</span><Button variant="ghost" size="icon" aria-label="Odśwież pomiary" disabled={loading} onClick={() => setRefresh(v => v + 1)}><RefreshCw size={14} className={loading ? "refreshing" : ""} /></Button></div></footer>
+
   </main>
 }
 
@@ -123,10 +125,10 @@ function MetricCard({ label, value, unit, icon, accent, active, onClick, stale, 
   label: string; value?: number; unit: string; icon: React.ReactNode; accent: string;
   active: boolean; onClick: () => void; stale: boolean; loading: boolean;
 }) {
-  return <Card className={cn("metric-card", accent, active && "active")}><button className="metric-button" onClick={onClick} aria-pressed={active} aria-label={`Pokaż wykres: ${label.toLowerCase()}`}>
+  return <Card className={cn("metric-card", accent, active && "active")}><button className="metric-button" onClick={onClick} aria-pressed={active} aria-label={`Show chart: ${label.toLowerCase()}`}>
     <span className="metric-label">{label}<span className="metric-icon">{icon}</span></span>
     <span className={cn("metric-value", loading && "skeleton")}>{number(value)}<span className="unit">{unit}</span></span>
-    <span className="metric-bottom">{stale ? "Ostatni zapisany odczyt" : value == null ? "Oczekiwanie na czujnik" : "W pokoju"}<span className="metric-indicator" /></span>
+    <span className="metric-bottom">{stale ? "Last saved reading" : value == null ? "Waiting for sensor" : ""}<span className="metric-indicator" /></span>
   </button></Card>
 }
 
